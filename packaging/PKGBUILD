@@ -2,9 +2,9 @@
 pkgname=silverspoon-bin
 pkgver=1.6.0
 pkgrel=1
-pkgdesc="Bulk downloader with Cloudflare Turnstile bypass for Linux"
+pkgdesc="SilverSpoon Linux Edition - Bulk downloader with Cloudflare Turnstile bypass"
 arch=('x86_64')
-url="https://github.com/billysams21/SilverSpoon"
+url="https://github.com/kalpanakonara/SilverSpoon"
 license=('GPL3')
 depends=('p7zip')
 optdepends=(

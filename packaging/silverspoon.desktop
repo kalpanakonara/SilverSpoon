@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=SilverSpoon
-GenericName=Download Manager
-Comment=Bulk downloader with Cloudflare Turnstile solver
+GenericName=Download Manager (Linux Edition)
+Comment=Bulk downloader with Cloudflare Turnstile solver - Linux Edition
 Exec=/usr/bin/silverspoon
 Icon=silverspoon
 Terminal=false

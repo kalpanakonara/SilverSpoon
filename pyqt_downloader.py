@@ -1015,7 +1015,8 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(f"SilverSpoon {CURRENT_VERSION}")
+        edition = " (Linux Edition)" if sys.platform.startswith('linux') else ""
+        self.setWindowTitle(f"SilverSpoon {CURRENT_VERSION}{edition}")
         self.resize(1000, 650)
         
         if hasattr(sys, '_MEIPASS'):

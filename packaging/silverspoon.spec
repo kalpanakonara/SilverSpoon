@@ -5,16 +5,16 @@
 Name:           silverspoon
 Version:        1.6.0
 Release:        1%{?dist}
-Summary:        Fast bulk downloader with Cloudflare Turnstile bypass for Linux
+Summary:        SilverSpoon Linux Edition - Fast bulk downloader with Cloudflare Turnstile bypass
 License:        GPL-3.0-or-later
-URL:            https://github.com/billysams21/SilverSpoon
+URL:            https://github.com/kalpanakonara/SilverSpoon
 
 # System dependencies on Linux
 Requires:       (google-chrome or google-chrome-stable or chromium or /usr/bin/google-chrome)
 Requires:       (p7zip or 7zip or /usr/bin/7z or /usr/bin/7za)
 
 %description
-SilverSpoon is a bulk downloader designed to bypass Cloudflare Turnstile
+SilverSpoon Linux Edition is a bulk downloader designed to bypass Cloudflare Turnstile
 protections on file-hosting sites (like fuckingfast.co and datanodes.to)
 and queue ordinary direct download links alongside them, supporting concurrent
 downloading with pause, resume, inline progress, and auto-extraction.

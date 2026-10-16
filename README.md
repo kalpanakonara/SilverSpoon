@@ -1,4 +1,11 @@
-# SilverSpoon (previously FitGirlDownloader)
+# SilverSpoon - Linux Edition 🐧
+
+[![Release](https://img.shields.io/github/v/release/kalpanakonara/SilverSpoon?label=Release&color=blue)](https://github.com/kalpanakonara/SilverSpoon/releases/latest)
+[![Platform](https://img.shields.io/badge/Platform-Linux%20%28AppImage%20%7C%20DEB%20%7C%20RPM%20%7C%20Arch%29-brightgreen)](https://github.com/kalpanakonara/SilverSpoon/releases/latest)
+[![Upstream](https://img.shields.io/badge/Fork%20of-billysams21%2FSilverSpoon-orange)](https://github.com/billysams21/SilverSpoon)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+
+> **SilverSpoon Linux Edition** is a native Linux port and packaging of [SilverSpoon](https://github.com/billysams21/SilverSpoon) (originally by [@billysams21](https://github.com/billysams21)). It brings first-class Linux support, native Google Chrome / Chromium Turnstile bypass solving, systemd download sleep-inhibition, native 7-Zip extraction, and distribution packages for all major Linux ecosystems (AppImage, DEB, RPM, and Arch PKGBUILD).
 
 > **Note:** `fuckingfast.co` and `datanodes.to` links (commonly used by FitGirl Repacks and direct download mirrors) go through the built-in Cloudflare Turnstile solver. Since v1.6.0 any other plain `http(s)` direct link is downloaded straight away, with the same pause/resume/progress support.
 
@@ -112,7 +119,7 @@ This generates in `dist/`:
 ## Credits & Acknowledgments
 
 * **Original Author & Source Code:** Created by [Billy Samuel Setiawan (@billysams21)](https://github.com/billysams21) — original project: [billysams21/SilverSpoon](https://github.com/billysams21/SilverSpoon).
-* This Linux-enhanced edition brings Google Chrome Turnstile integration, systemd sleep prevention, native 7-Zip support, and Linux packaging (RPM/tarball).
+* **SilverSpoon Linux Edition:** Maintained by [kalpanakonara](https://github.com/kalpanakonara). Adds native Google Chrome / Chromium Turnstile bypass solving, systemd sleep inhibition, native 7-Zip extraction, and multi-distro packaging (AppImage, DEB, RPM, Tarball, and PKGBUILD).
 
 ## Contributing
 
