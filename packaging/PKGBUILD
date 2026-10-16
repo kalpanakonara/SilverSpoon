@@ -1,0 +1,42 @@
+# Maintainer: SilverSpoon Contributors <silverspoon@github.com>
+pkgname=silverspoon-bin
+pkgver=1.6.0
+pkgrel=1
+pkgdesc="Bulk downloader with Cloudflare Turnstile bypass for Linux"
+arch=('x86_64')
+url="https://github.com/billysams21/SilverSpoon"
+license=('GPL3')
+depends=('p7zip')
+optdepends=(
+    'google-chrome: Recommended browser for Turnstile CAPTCHA solving'
+    'chromium: Alternative browser for Turnstile CAPTCHA solving'
+)
+source=("silverspoon-${pkgver}-linux-x86_64.tar.gz")
+sha256sums=('SKIP')
+
+package() {
+    install -d "${pkgdir}/opt/silverspoon"
+    install -d "${pkgdir}/usr/bin"
+    install -d "${pkgdir}/usr/share/applications"
+    install -d "${pkgdir}/usr/share/icons/hicolor/256x256/apps"
+
+    cp -r "${srcdir}/silverspoon/"* "${pkgdir}/opt/silverspoon/"
+    ln -sf /opt/silverspoon/silverspoon "${pkgdir}/usr/bin/silverspoon"
+    
+    if [ -f "${pkgdir}/opt/silverspoon/SilverSpoon.png" ]; then
+        install -m644 "${pkgdir}/opt/silverspoon/SilverSpoon.png" "${pkgdir}/usr/share/icons/hicolor/256x256/apps/silverspoon.png"
+    fi
+
+    cat <<EOF > "${pkgdir}/usr/share/applications/silverspoon.desktop"
+[Desktop Entry]
+Name=SilverSpoon
+GenericName=Download Manager
+Comment=Bulk downloader with Cloudflare Turnstile solver
+Exec=/usr/bin/silverspoon
+Icon=silverspoon
+Terminal=false
+Type=Application
+Categories=Network;FileTransfer;
+StartupNotify=true
+EOF
+}

@@ -95,16 +95,19 @@ If you prefer the command line:
    ```
 *(Files will be downloaded to the current working directory).*
 
-## Building Linux Executable & RPM Package
+## Building Linux Packages (Universal, RPM, DEB, Tarball)
 
-To compile the standalone Linux binary and generate an RPM package (`.rpm`):
+You can build packages for all major Linux distributions in one command:
 ```bash
-./build_rpm.sh
+./build_linux_packages.sh
 ```
-This produces:
-- `dist/silverspoon-1.6.0-1.fc44.x86_64.rpm` (Install with `sudo dnf install <rpm-file>`)
-- `dist/silverspoon-1.6.0-linux-x86_64.tar.gz` (Portable Linux tarball)
-- `dist/silverspoon/` (Standalone binary directory)
+
+This generates in `dist/`:
+* **AppImage** (`dist/SilverSpoon-1.6.0-x86_64.AppImage`): Universal binary for **all Linux distributions** (Ubuntu, Debian, Fedora, Arch, openSUSE, Linux Mint, Manjaro, Pop!_OS, etc.). Run directly with `chmod +x` without installation.
+* **Debian / Ubuntu Package** (`dist/silverspoon_1.6.0_amd64.deb`): Install with `sudo apt install ./silverspoon_1.6.0_amd64.deb` (or `sudo dpkg -i`).
+* **RPM Package** (`dist/silverspoon-1.6.0-1.*.rpm`): Install with `sudo dnf install ./silverspoon-1.6.0-1.*.rpm`.
+* **Portable Tarball** (`dist/silverspoon-1.6.0-linux-x86_64.tar.gz`): Extract and run standalone anywhere.
+* **Arch Linux**: Build script recipe provided at `packaging/PKGBUILD` for Arch / Manjaro (`makepkg -si`).
 
 ## Credits & Acknowledgments
 
