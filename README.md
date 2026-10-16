@@ -33,6 +33,8 @@ A Python-based bulk downloader designed to bypass Cloudflare protections on file
 ## Requirements
 
 * Python 3.10+
+* Google Chrome or Chromium (on Linux: `google-chrome`, `google-chrome-stable`, or `chromium`, or set `CHROME_BIN=/path/to/chrome`)
+* 7-Zip (`7z` or `7za` via package manager on Linux / macOS for archive extraction)
 * Dependencies listed in `requirements.txt`
 
 ## Installation
@@ -42,7 +44,7 @@ A Python-based bulk downloader designed to bypass Cloudflare protections on file
    git clone https://github.com/billysams21/SilverSpoon.git
    cd SilverSpoon
    ```
-2. Install the required Python packages (or do it inside virtual environment):
+2. Install the required Python packages (or do it inside a virtual environment):
    ```bash
    pip install -r requirements.txt
    ```
@@ -93,9 +95,21 @@ If you prefer the command line:
    ```
 *(Files will be downloaded to the current working directory).*
 
-## Building the Windows executable
+## Building Linux Executable & RPM Package
 
-Run `build_exe.bat` (needs `pyinstaller` and a Playwright Chromium under `%LOCALAPPDATA%\ms-playwright`); the distributable folder lands in `dist\SilverSpoon`. Pushing a `v*.*.*` tag runs the same build on GitHub Actions and attaches `SilverSpoon-windows.zip` to the release.
+To compile the standalone Linux binary and generate an RPM package (`.rpm`):
+```bash
+./build_rpm.sh
+```
+This produces:
+- `dist/silverspoon-1.6.0-1.fc44.x86_64.rpm` (Install with `sudo dnf install <rpm-file>`)
+- `dist/silverspoon-1.6.0-linux-x86_64.tar.gz` (Portable Linux tarball)
+- `dist/silverspoon/` (Standalone binary directory)
+
+## Credits & Acknowledgments
+
+* **Original Author & Source Code:** Created by [Billy Samuel Setiawan (@billysams21)](https://github.com/billysams21) — original project: [billysams21/SilverSpoon](https://github.com/billysams21/SilverSpoon).
+* This Linux-enhanced edition brings Google Chrome Turnstile integration, systemd sleep prevention, native 7-Zip support, and Linux packaging (RPM/tarball).
 
 ## Contributing
 

@@ -27,7 +27,8 @@ Thumbs.db
 .DS_Store
 /build
 /dist
-FitGirlDownloader.spec
-SilverSpoon.spec
+/FitGirlDownloader.spec
+/SilverSpoon.spec
+/silverspoon.spec
 /_internal
 /playwright-chromium

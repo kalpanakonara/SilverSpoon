@@ -10,6 +10,7 @@ import datetime as dt
 import json
 import os
 import socket
+import shutil
 import subprocess
 import sys
 
@@ -215,29 +216,64 @@ _ES_SYSTEM_REQUIRED = 0x00000001
 _ES_AWAYMODE_REQUIRED = 0x00000040
 
 
+_linux_inhibit_proc = None
+
+
 def prevent_sleep():
-    """Keep the machine awake while downloading. No-op off Windows."""
-    if sys.platform != "win32":
+    """Keep the machine awake while downloading. Uses SetThreadExecutionState on
+    Windows and systemd-inhibit on Linux if available."""
+    global _linux_inhibit_proc
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            ctypes.windll.kernel32.SetThreadExecutionState(
+                _ES_CONTINUOUS | _ES_SYSTEM_REQUIRED | _ES_AWAYMODE_REQUIRED)
+            return True
+        except Exception:
+            return False
+    elif sys.platform.startswith("linux"):
+        if _linux_inhibit_proc and _linux_inhibit_proc.poll() is None:
+            return True
+        inhibit_bin = shutil.which("systemd-inhibit")
+        if inhibit_bin:
+            try:
+                _linux_inhibit_proc = subprocess.Popen(
+                    [inhibit_bin, "--what=sleep:idle", "--who=SilverSpoon",
+                     "--why=Downloading files", "sleep", "infinity"],
+                    stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                )
+                return True
+            except Exception:
+                _linux_inhibit_proc = None
         return False
-    try:
-        import ctypes
-        ctypes.windll.kernel32.SetThreadExecutionState(
-            _ES_CONTINUOUS | _ES_SYSTEM_REQUIRED | _ES_AWAYMODE_REQUIRED)
-        return True
-    except Exception:
-        return False
+    return False
 
 
 def allow_sleep():
-    """Release the keep-awake lock. No-op off Windows."""
-    if sys.platform != "win32":
+    """Release the keep-awake lock."""
+    global _linux_inhibit_proc
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            ctypes.windll.kernel32.SetThreadExecutionState(_ES_CONTINUOUS)
+            return True
+        except Exception:
+            return False
+    elif sys.platform.startswith("linux"):
+        if _linux_inhibit_proc:
+            try:
+                if _linux_inhibit_proc.poll() is None:
+                    _linux_inhibit_proc.terminate()
+                    _linux_inhibit_proc.wait(timeout=1)
+            except Exception:
+                try:
+                    _linux_inhibit_proc.kill()
+                except Exception:
+                    pass
+            _linux_inhibit_proc = None
+            return True
         return False
-    try:
-        import ctypes
-        ctypes.windll.kernel32.SetThreadExecutionState(_ES_CONTINUOUS)
-        return True
-    except Exception:
-        return False
+    return False
 
 
 def _run_powershell(command):

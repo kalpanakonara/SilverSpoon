@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=SilverSpoon
+GenericName=Download Manager
+Comment=Bulk downloader with Cloudflare Turnstile solver
+Exec=/usr/bin/silverspoon
+Icon=silverspoon
+Terminal=false
+Type=Application
+Categories=Network;FileTransfer;
+StartupNotify=true

@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 import json
 import logging
 import os
@@ -24,12 +25,47 @@ def find_browsers():
     exe = "chrome.exe" if sys.platform == "win32" else "chrome"
     browser_path = os.path.join(app_dir, "playwright-chromium", exe)
     found = [browser_path] if os.path.isfile(browser_path) else []
-    
-    # Local Playwright Chromium is the second choice during development.
+
+    # User-specified browser via environment variables
+    env_browser = (
+        os.environ.get("CHROME_BIN")
+        or os.environ.get("CHROME_PATH")
+        or os.environ.get("SILVERSPOON_CHROME")
+    )
+    if env_browser and os.path.isfile(env_browser) and env_browser not in found:
+        found.append(env_browser)
+
+    # On Linux/macOS, prioritize system Chrome / Chromium binaries
+    if sys.platform != "win32":
+        linux_chrome_paths = [
+            shutil.which("google-chrome"),
+            shutil.which("google-chrome-stable"),
+            "/opt/google/chrome/chrome",
+            "/opt/google/chrome/google-chrome",
+            "/usr/bin/google-chrome",
+            "/usr/bin/google-chrome-stable",
+            shutil.which("chromium"),
+            shutil.which("chromium-browser"),
+            "/usr/bin/chromium",
+            "/usr/bin/chromium-browser",
+            shutil.which("chrome"),
+            shutil.which("brave-browser"),
+            shutil.which("microsoft-edge"),
+            shutil.which("microsoft-edge-stable"),
+            "/snap/bin/google-chrome",
+            "/snap/bin/chromium",
+            os.path.expanduser("~/.local/share/flatpak/exports/bin/com.google.Chrome"),
+            "/var/lib/flatpak/exports/bin/com.google.Chrome",
+        ]
+        for p in linux_chrome_paths:
+            if p and os.path.isfile(p) and p not in found:
+                found.append(p)
+
+    # Local Playwright Chromium (used during Windows dev or if playwright is installed)
     la = os.environ.get("LOCALAPPDATA", "")
     pf = os.environ.get("PROGRAMFILES", "")
     pf86 = os.environ.get("PROGRAMFILES(X86)", "")
-    
+
     pw_roots = [
         (os.path.join(la, "ms-playwright"), "chrome-win64", "chrome.exe"),
         # Newer Playwright (Chrome for Testing builds) uses chrome-linux64 / chrome-linux-arm64;
@@ -43,41 +79,54 @@ def find_browsers():
         for entry in sorted(os.listdir(pw_root), reverse=True):
             if entry.startswith("chromium-") and not entry.startswith("chromium_headless"):
                 dev_path = os.path.join(pw_root, entry, pw_sub, pw_exe)
-                if os.path.isfile(dev_path):
+                if os.path.isfile(dev_path) and dev_path not in found:
                     found.append(dev_path)
 
-    # System browser fallbacks
-    system_paths = [
-        os.path.join(pf, "Google", "Chrome", "Application", "chrome.exe"),
-        os.path.join(pf86, "Google", "Chrome", "Application", "chrome.exe"),
-        os.path.join(la, "Google", "Chrome", "Application", "chrome.exe"),
-        shutil.which("chrome"),
-        os.path.join(pf, "Microsoft", "Edge", "Application", "msedge.exe"),
-        os.path.join(pf86, "Microsoft", "Edge", "Application", "msedge.exe"),
-        os.path.join(la, "Microsoft", "Edge", "Application", "msedge.exe"),
-        shutil.which("msedge"),
-        *(shutil.which(name) for name in (
-            "google-chrome", "google-chrome-stable", "chromium", "chromium-browser",
-            "brave-browser", "microsoft-edge", "microsoft-edge-stable",
-        )),
-        "/snap/bin/chromium",
-    ]
-    
-    for path in system_paths:
-        if path and os.path.isfile(path) and path not in found:
-            found.append(path)
-            
+    # Windows system browser fallbacks
+    if sys.platform == "win32":
+        win_paths = [
+            os.path.join(pf, "Google", "Chrome", "Application", "chrome.exe"),
+            os.path.join(pf86, "Google", "Chrome", "Application", "chrome.exe"),
+            os.path.join(la, "Google", "Chrome", "Application", "chrome.exe"),
+            shutil.which("chrome"),
+            os.path.join(pf, "Microsoft", "Edge", "Application", "msedge.exe"),
+            os.path.join(pf86, "Microsoft", "Edge", "Application", "msedge.exe"),
+            os.path.join(la, "Microsoft", "Edge", "Application", "msedge.exe"),
+            shutil.which("msedge"),
+        ]
+        for path in win_paths:
+            if path and os.path.isfile(path) and path not in found:
+                found.append(path)
+
+    # Autodetect fallback using nodriver's built-in finder
+    if not found:
+        try:
+            from nodriver.core.config import find_chrome_executable
+            autodetected = find_chrome_executable()
+            if autodetected and os.path.isfile(autodetected) and autodetected not in found:
+                found.append(autodetected)
+        except Exception:
+            pass
+
     return found
 
 
 class TurnstileSolver:
     MAX_ATTEMPTS = 2
 
-    def __init__(self, profile_dir=None, timeout=10):
+    def __init__(self, profile_dir=None, timeout=10, headless=None):
         self.TOKEN_TIMEOUT = timeout
         self._profile_dir = profile_dir or os.path.join(
             tempfile.gettempdir(), "silverspoon_browser_profile"
         )
+        if headless is None:
+            # On Linux without a GUI display ($DISPLAY / $WAYLAND_DISPLAY), run headless
+            if sys.platform != "win32" and not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
+                self._headless = True
+            else:
+                self._headless = False
+        else:
+            self._headless = bool(headless)
         self._loop = None
         self._loop_thread = None
         self._browser = None
@@ -116,17 +165,21 @@ class TurnstileSolver:
         if self._browser:
             try:
                 logger.info("TurnstileSolver: stopping browser")
-                # Stop can hang if the browser is completely frozen
-                await asyncio.wait_for(self._browser.stop(), timeout=3.0)
+                try:
+                    await asyncio.wait_for(self._browser.aclose(), timeout=2.0)
+                except Exception:
+                    pass
+                stop_res = self._browser.stop()
+                if inspect.isawaitable(stop_res):
+                    await asyncio.wait_for(stop_res, timeout=3.0)
             except Exception as e:
                 logger.error("TurnstileSolver: error stopping browser gracefully: %s", e)
                 # Force kill the underlying process if gracefully stopping failed
                 try:
-                    if hasattr(self._browser, "config") and hasattr(self._browser.config, "browser_process"):
-                        proc = self._browser.config.browser_process
-                        if proc:
-                            proc.kill()
-                            logger.info("TurnstileSolver: browser process force killed")
+                    proc = getattr(self._browser, "_process", None)
+                    if proc and proc.returncode is None:
+                        proc.kill()
+                        logger.info("TurnstileSolver: browser process force killed")
                 except Exception as kill_e:
                     logger.error("TurnstileSolver: failed to force kill browser: %s", kill_e)
             self._browser = None
@@ -137,17 +190,24 @@ class TurnstileSolver:
             return
         candidates = find_browsers()
         if not candidates:
-            raise RuntimeError(
-                "Bundled Playwright Chromium was not found. Reinstall "
-                "SilverSpoon and keep the playwright-chromium folder beside the executable."
-            )
+            if sys.platform == "win32":
+                raise RuntimeError(
+                    "Bundled Playwright Chromium was not found. Reinstall "
+                    "SilverSpoon and keep the playwright-chromium folder beside the executable."
+                )
+            else:
+                raise RuntimeError(
+                    "Google Chrome or Chromium was not found on your Linux system. "
+                    "Please install Google Chrome (e.g. google-chrome-stable) or Chromium, "
+                    "or set the CHROME_BIN environment variable to the path of your Chrome executable."
+                )
         os.makedirs(self._profile_dir, exist_ok=True)
         last_err = None
         for bp in candidates:
             try:
-                logger.info("TurnstileSolver: starting browser %s", bp)
+                logger.info("TurnstileSolver: starting browser %s (headless=%s)", bp, self._headless)
                 self._browser = await nodriver.start(
-                    headless=False,
+                    headless=self._headless,
                     browser_executable_path=bp,
                     user_data_dir=self._profile_dir,
                     sandbox=False,
@@ -518,16 +578,27 @@ class TurnstileSolver:
             except Exception:
                 pass
         self._browser = None
-        if self._loop is not None and self._loop.is_running():
+        loop = self._loop
+        self._loop = None
+        if loop is not None and loop.is_running():
             try:
-                self._loop.call_soon_threadsafe(self._loop.stop)
+                def _cancel_and_stop():
+                    for task in asyncio.all_tasks(loop):
+                        task.cancel()
+                    loop.stop()
+                loop.call_soon_threadsafe(_cancel_and_stop)
             except Exception:
                 pass
-        self._loop = None
 
     async def _stop_browser_async(self):
         if self._browser is not None:
             try:
-                self._browser.stop()
+                try:
+                    await asyncio.wait_for(self._browser.aclose(), timeout=2.0)
+                except Exception:
+                    pass
+                stop_res = self._browser.stop()
+                if inspect.isawaitable(stop_res):
+                    await stop_res
             except Exception:
                 pass

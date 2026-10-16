@@ -1,4 +1,5 @@
 curl_cffi>=0.7,<1.0
 # pre-1.0, minor bumps can break the CAPTCHA solver
 nodriver>=0.50,<0.51
+websockets>=14.0,<15.0
 PyQt6>=6.11.0

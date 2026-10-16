@@ -10,13 +10,15 @@ import urllib.parse
 
 from curl_cffi import requests as curl_requests
 from cf_turnstile import TurnstileSolver
+from providers import needs_resolution, filename_from_link
 
 class DownloadManager:
     def __init__(self, links_file, max_workers=3, chunk_size=8*1024*1024):
         self.links_file = links_file
         self.max_workers = max_workers
         self.chunk_size = chunk_size
-        self.solver = TurnstileSolver()
+        self.solver = None
+        self._solver_lock = threading.Lock()
         self.dl_session = curl_requests.Session(impersonate="chrome")
         self.total_links = 0
         self.completed_links = 0
@@ -28,20 +30,27 @@ class DownloadManager:
             self.links = [line.strip() for line in f if line.strip()]
         self.total_links = len(self.links)
 
+    def _get_solver(self):
+        with self._solver_lock:
+            if self.solver is None:
+                self.solver = TurnstileSolver()
+            return self.solver
+
     def extract_direct_url(self, link):
         try:
-            result = self.solver.get_direct_link(link)
+            result = self._get_solver().get_direct_link(link)
             return result.get("direct_url"), result.get("cookies", {}), result.get("user_agent", "")
         except Exception as e:
             print(f"[!] Error extracting direct URL: {e}")
             return None, {}, ""
 
     def download_file(self, link):
-        raw_name = link.split('#')[-1] if '#' in link else link.rstrip('/').split('/')[-1]
-        filename = urllib.parse.unquote(raw_name)
-        file_id = link.rstrip('/').split('/')[-1].split('#')[0]
+        filename = filename_from_link(link)
         
-        dl_url, cookies, user_agent = self.extract_direct_url(link)
+        if needs_resolution(link):
+            dl_url, cookies, user_agent = self.extract_direct_url(link)
+        else:
+            dl_url, cookies, user_agent = link, {}, ""
         if not dl_url:
             with self.lock:
                 print(f"[!] Failed to get direct URL for {filename}")
@@ -148,7 +157,8 @@ class DownloadManager:
                 futures = [executor.submit(self.download_file, link) for link in self.links]
                 concurrent.futures.wait(futures)
         finally:
-            self.solver.stop()
+            if self.solver:
+                self.solver.stop()
             
         print("\n" + "="*50)
         print(f"Finished! Completed: {self.completed_links}/{self.total_links}")

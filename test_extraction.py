@@ -6,14 +6,16 @@ skipped when neither is available.
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 
 import extraction as X
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SEVEN_ZIP = next(
-    (p for p in (os.path.join(HERE, "7z.exe"), shutil.which("7z")) if p and os.path.isfile(p)),
-    None,
+SEVEN_ZIP = (
+    next((p for p in (os.path.join(HERE, "7z.exe"), shutil.which("7z")) if p and os.path.isfile(p)), None)
+    if sys.platform == "win32"
+    else (shutil.which("7z") or shutil.which("7za"))
 )
 
 LISTING = """Path = sub

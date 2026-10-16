@@ -66,7 +66,11 @@ class UpdateCheckerThread(QThread):
         
     def run(self):
         try:
-            if sys.platform != "win32" or (not hasattr(sys, "frozen") and not self.force):
+            if sys.platform != "win32":
+                if self.force:
+                    self.error_checking.emit("Auto-update is only supported for Windows packaged releases. Please update using 'git pull' on Linux.")
+                return
+            if not hasattr(sys, "frozen") and not self.force:
                 return
                 
             now = time.time()

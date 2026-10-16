@@ -456,15 +456,12 @@ def get_settings_path():
     return os.path.expanduser("~/.silverspoon_settings.json")
 
 def load_settings():
-    if sys.platform == "win32":
-        default_downloads = os.path.join(os.path.expanduser("~"), "Downloads")
-        if not os.path.exists(default_downloads):
-            try:
-                os.makedirs(default_downloads, exist_ok=True)
-            except Exception:
-                default_downloads = os.path.abspath(".")
-    else:
-        default_downloads = os.path.abspath(".")
+    default_downloads = os.path.join(os.path.expanduser("~"), "Downloads")
+    if not os.path.exists(default_downloads):
+        try:
+            os.makedirs(default_downloads, exist_ok=True)
+        except Exception:
+            default_downloads = os.path.abspath(".")
         
     default_settings = {
         "theme": "Dark",
@@ -695,9 +692,8 @@ class SettingsDialog(QDialog):
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
         )
         if reply == QMessageBox.StandardButton.Yes:
-            if sys.platform == "win32":
-                default_dir = os.path.join(os.path.expanduser("~"), "Downloads")
-            else:
+            default_dir = os.path.join(os.path.expanduser("~"), "Downloads")
+            if not os.path.exists(default_dir):
                 default_dir = os.path.abspath(".")
             
             self.dir_input.setText(default_dir)
@@ -1027,7 +1023,11 @@ class MainWindow(QMainWindow):
         else:
             self.base_dir = os.path.dirname(os.path.abspath(__file__))
             
-        icon_path = os.path.join(self.base_dir, 'SilverSpoon.ico')
+        icon_png = os.path.join(self.base_dir, 'SilverSpoon.png')
+        icon_ico = os.path.join(self.base_dir, 'SilverSpoon.ico')
+        icon_path = icon_png if os.path.exists(icon_png) and sys.platform != 'win32' else icon_ico
+        if not os.path.exists(icon_path):
+            icon_path = icon_ico if os.path.exists(icon_ico) else icon_png
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
         
@@ -2762,16 +2762,19 @@ class MainWindow(QMainWindow):
             if shutil.which('7z'):
                 extractor_type = '7z'
                 base_cmd = '7z'
+            elif shutil.which('7za'):
+                extractor_type = '7z'
+                base_cmd = '7za'
             elif shutil.which('unrar'):
                 extractor_type = 'unrar'
                 base_cmd = 'unrar'
 
         if extractor_type == '7z':
             seven_zip = base_cmd
-        elif bundled_7z and os.path.exists(bundled_7z):
+        elif sys.platform == 'win32' and bundled_7z and os.path.exists(bundled_7z):
             seven_zip = bundled_7z
         else:
-            seven_zip = shutil.which('7z')
+            seven_zip = shutil.which('7z') or shutil.which('7za')
         return extractor_type, base_cmd, seven_zip
 
     def _already_extracted(self, tasks_in_folder):
